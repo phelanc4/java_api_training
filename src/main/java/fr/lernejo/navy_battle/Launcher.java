@@ -62,7 +62,6 @@ public class Launcher {
         	@Override
         	public void handle(HttpExchange exchange) throws IOException {
             		try {
-                		String requestBody = new String(exchange.getRequestBody().readAllBytes());
                 		JsonNode responseJson = objectMapper.createObjectNode()
                         		.put("id", "2aca7611-0ae4-49f3-bf63-75bef4769028")
                         		.put("url", "http://localhost:" + port)
