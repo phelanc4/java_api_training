@@ -34,7 +34,7 @@ public class Launcher {
 		HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
 		server.setExecutor(Executors.newFixedThreadPool(1));
 		server.createContext("/ping", new PingHandler());
-		server.createContext("/api/game/start", new GameStartHandler());
+		server.createContext("/api/game/start", new GameStartHandler(port));
 		server.start();
 	}
 
@@ -54,22 +54,20 @@ public class Launcher {
 	}
 	static class GameStartHandler implements HttpHandler {
         	private final ObjectMapper objectMapper = new ObjectMapper();
+		private final int port;
 
+		public GameStartHandler(int port) {
+			this.port = port;
+		}
         	@Override
         	public void handle(HttpExchange exchange) throws IOException {
             		try {
                 		String requestBody = new String(exchange.getRequestBody().readAllBytes());
                 		JsonNode jsonNode = objectMapper.readTree(requestBody);
-
-                		String id = jsonNode.get("id").asText();
-                		String url = jsonNode.get("url").asText();
-                		String message = jsonNode.get("message").asText();
-
                 		JsonNode responseJson = objectMapper.createObjectNode()
                         		.put("id", "2aca7611-0ae4-49f3-bf63-75bef4769028")
-                        		.put("url", "http://localhost:7390")
+                        		.put("url", "http://localhost:" + port)
                         		.put("message", "May the best code win");
-
                 		exchange.sendResponseHeaders(202, responseJson.toString().length());
                 		try (OutputStream os = exchange.getResponseBody()) {
 					os.write(responseJson.toString().getBytes());
