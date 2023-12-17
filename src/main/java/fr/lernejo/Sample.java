@@ -5,7 +5,7 @@ import java.util.function.BiFunction;
 public class Sample {
 
     public int op(Operation op, int a, int b) {
-        return op.func.apply(a, b);
+        return op.getFunc().apply(a, b);
     }
 
     public int fact(int n) {
@@ -20,10 +20,14 @@ public class Sample {
         MULT((a, b) -> a * b),
         ;
 
-        final BiFunction<Integer, Integer, Integer> func;
+        private final BiFunction<Integer, Integer, Integer> func;
 
         Operation(BiFunction<Integer, Integer, Integer> func) {
             this.func = func;
+        }
+
+        public BiFunction<Integer, Integer, Integer> getFunc() {
+            return func;
         }
     }
 }
