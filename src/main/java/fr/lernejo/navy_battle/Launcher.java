@@ -1,23 +1,26 @@
 package fr.lernejo.navy_battle;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.http.HttpRequest.BodyPublishers;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.concurrent.Executors;
 
 public class Launcher {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static void main(String[] args) {
-        if (args.length != 1) {
-            System.err.println("Usage: java fr.lernejo.navy_battle.Launcher <port>");
-            System.exit(1);
+        if (!isValidArgsLength(args)) {
+            displayUsageAndExit();
         }
 
         int port = Integer.parseInt(args[0]);
@@ -25,10 +28,23 @@ public class Launcher {
         try {
             createAndStartHttpServer(port);
             System.out.println("Server started on port " + port);
+
+            if (args.length == 2) {
+                String adversaryUrl = args[1];
+                makePostRequest(port, adversaryUrl);
+            }
         } catch (IOException e) {
-            System.err.println("Error starting the server: " + e.getMessage());
-            System.exit(1);
+            handleServerError(e);
         }
+    }
+
+    private static boolean isValidArgsLength(String[] args) {
+        return args.length == 1 || args.length == 2;
+    }
+
+    private static void displayUsageAndExit() {
+        System.err.println("Usage: java fr.lernejo.navy_battle.Launcher <port> [adversaryUrl]");
+        System.exit(1);
     }
 
     private static void createAndStartHttpServer(int port) throws IOException {
@@ -64,30 +80,77 @@ public class Launcher {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             try {
-                JsonNode responseJson = objectMapper.createObjectNode()
-                        .put("id", "2aca7611-0ae4-49f3-bf63-75bef4769028")
-                        .put("url", "http://localhost:" + port)
-                        .put("message", "May the best code win");
-                sendJsonResponse(exchange, 202, responseJson.toString());
-            } catch (IOException e) {
-                sendResponse(exchange, 400, "");
+                processGameStartRequest(exchange);
+            } catch (Exception e) {
+                sendErrorResponse(exchange, 400);
             }
         }
 
-        private void sendJsonResponse(HttpExchange exchange, int statusCode, String body) throws IOException {
-            exchange.sendResponseHeaders(statusCode, body.length());
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(body.getBytes());
-            }
+        private void processGameStartRequest(HttpExchange exchange) throws IOException {
+            String requestBody = new String(exchange.getRequestBody().readAllBytes());
+            JsonNode jsonNode = objectMapper.readTree(requestBody);
+
+            int adversaryPort = getAdversaryPort(jsonNode);
+
+            System.out.println("Received start request from adversary on port " + adversaryPort);
+
+            JsonNode responseJson = createResponseJson();
+
+            sendJsonResponse(exchange, responseJson);
+
+            makePostRequest(this.port, jsonNode.get("url").asText());
         }
 
-        private void sendResponse(HttpExchange exchange, int statusCode, String body) throws IOException {
-            exchange.sendResponseHeaders(statusCode, body.length());
+        private int getAdversaryPort(JsonNode jsonNode) {
+            String adversaryUrl = jsonNode.get("url").asText();
+            return adversaryUrl.endsWith("/") ? URI.create(adversaryUrl).getPort() : URI.create(adversaryUrl + "/").getPort();
+        }
+
+        private JsonNode createResponseJson() {
+            return objectMapper.createObjectNode()
+                    .put("id", "2aca7611-0ae4-49f3-bf63-75bef4769028")
+                    .put("url", "http://localhost:" + this.port)
+                    .put("message", "May the best code win");
+        }
+
+        private void sendJsonResponse(HttpExchange exchange, JsonNode responseJson) throws IOException {
+            exchange.sendResponseHeaders(202, responseJson.toString().length());
             try (OutputStream os = exchange.getResponseBody()) {
-                os.write(body.getBytes());
+                os.write(responseJson.toString().getBytes());
             }
         }
     }
+
+    private static void makePostRequest(int myPort, String adversaryUrl) {
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+
+            HttpRequest request = createPostRequest(myPort, adversaryUrl);
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            System.out.println("Response Status Code: " + response.statusCode());
+            System.out.println("Response Body: " + response.body());
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static HttpRequest createPostRequest(int myPort, String adversaryUrl) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(adversaryUrl + "/api/game/start"))
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .POST(BodyPublishers.ofString("{\"id\":\"1\", \"url\":\"http://localhost:" + myPort + "\", \"message\":\"hello\"}"))
+                .build();
+    }
+
+    private static void handleServerError(IOException e) {
+        System.err.println("Error starting the server: " + e.getMessage());
+        System.exit(1);
+    }
+
+    private static void sendErrorResponse(HttpExchange exchange, int statusCode) throws IOException {
+        exchange.sendResponseHeaders(statusCode, 0);
+    }
 }
-
-
