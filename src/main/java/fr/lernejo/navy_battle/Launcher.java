@@ -16,7 +16,7 @@ import java.net.http.HttpResponse;
 import java.util.concurrent.Executors;
 
 public class Launcher {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
     public static void main(String[] args) {
     	if (!isValidArgsLength(args)) {
         	displayUsageAndExit();
