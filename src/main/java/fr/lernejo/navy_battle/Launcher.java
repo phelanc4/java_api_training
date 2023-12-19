@@ -17,25 +17,27 @@ import java.util.concurrent.Executors;
 
 public class Launcher {
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
     public static void main(String[] args) {
-        if (!isValidArgsLength(args)) {
-            displayUsageAndExit();
-        }
+    	if (!isValidArgsLength(args)) {
+        	displayUsageAndExit();
+    	}
 
-        int port = Integer.parseInt(args[0]);
+   	 int port = Integer.parseInt(args[0]);
 
-        try {
-            createAndStartHttpServer(port);
-            System.out.println("Server started on port " + port);
+    	try {
+        	startServer(port, args);
+    	} catch (IOException e) {
+        	handleServerError(e);
+    	}
+    }
 
-            if (args.length == 2) {
-                String adversaryUrl = args[1];
-                makePostRequest(port, adversaryUrl);
-            }
-        } catch (IOException e) {
-            handleServerError(e);
-        }
+    private static void startServer(int port, String[] args) throws IOException {
+    	createAndStartHttpServer(port);
+    	System.out.println("Server started on port " + port);
+
+    	if (args.length == 2) {
+        	makePostRequest(port, args[1]);
+    	}
     }
 
     private static boolean isValidArgsLength(String[] args) {
