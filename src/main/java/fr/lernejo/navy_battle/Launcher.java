@@ -1,5 +1,7 @@
 package fr.lernejo.navy_battle;
 
+import fr.lernejo.navy_battle.FireHandler;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -55,6 +57,7 @@ public class Launcher {
         server.setExecutor(Executors.newFixedThreadPool(1));
         server.createContext("/ping", new PingHandler());
         server.createContext("/api/game/start", new GameStartHandler(port));
+	server.createContext("/api/game/fire", new FireHandler());
         server.start();
     }
 
