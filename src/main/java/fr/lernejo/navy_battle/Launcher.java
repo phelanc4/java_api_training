@@ -16,7 +16,7 @@ import java.net.http.HttpResponse;
 import java.util.concurrent.Executors;
 
 public class Launcher {
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // private final ObjectMapper objectMapper = new ObjectMapper();
     public static void main(String[] args) {
     	if (!isValidArgsLength(args)) {
         	displayUsageAndExit();
@@ -89,6 +89,7 @@ public class Launcher {
         }
 
         private void processGameStartRequest(HttpExchange exchange) throws IOException {
+	    ObjectMapper objectMapper = new ObjectMapper();
             String requestBody = new String(exchange.getRequestBody().readAllBytes());
             JsonNode jsonNode = objectMapper.readTree(requestBody);
 
@@ -109,6 +110,7 @@ public class Launcher {
         }
 
         private JsonNode createResponseJson() {
+	    ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.createObjectNode()
                     .put("id", "2aca7611-0ae4-49f3-bf63-75bef4769028")
                     .put("url", "http://localhost:" + this.port)
